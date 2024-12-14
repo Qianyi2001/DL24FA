@@ -127,10 +127,10 @@ def main():
     optimizer = optim.Adam(model.parameters(), lr=0.002)
 
     # Train the model
-    model = train_model(model, train_loader, optimizer, device, epochs=30)
+    model = train_model(model, train_loader, optimizer, device, epochs=20)
 
     # Save final checkpoint
-    save_checkpoint(model, optimizer, epoch=30, filepath="jepa_model_checkpoint.pth")
+    save_checkpoint(model, optimizer, epoch=20, filepath="jepa_model_checkpoint.pth")
 
     # Evaluate
     evaluator = ProbingEvaluator(

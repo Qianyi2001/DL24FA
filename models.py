@@ -119,10 +119,18 @@ class JEPAModel(nn.Module):
         self.predictor = Predictor(latent_dim)
         self.target_encoder = Encoder(latent_dim)
         self.repr_dim = latent_dim
+
+        self._initialize_weights()
         
         for param_t, param in zip(self.target_encoder.parameters(), self.encoder.parameters()):
             param_t.data.copy_(param.data)
             param_t.requires_grad = False
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
             
     def update_target_encoder(self, momentum=0.996):
         for param_t, param in zip(self.target_encoder.parameters(), self.encoder.parameters()):
@@ -166,6 +174,13 @@ class JEPAModel(nn.Module):
         cov_loss = (cov - torch.eye(cov.shape[0], device=device)).pow(2).sum()
 
         total_loss = loss_pred + 0.1 * variance_loss + 0.01 * cov_loss
+
+        print(
+            f"Prediction Loss (MSE): {loss_pred.item():.4f}, "
+            f"Variance Loss: {variance_loss.item():.4f}, "
+            f"Covariance Loss: {cov_loss.item():.4f}, "
+            f"Total Loss: {total_loss.item():.4f}"
+        )
 
         return {
             'loss': total_loss,
