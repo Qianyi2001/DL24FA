@@ -100,6 +100,7 @@ def train_model(model, train_loader, optimizer, device, epochs=30):
 
         print(f"Model checkpoint saved")
         save_checkpoint(model, optimizer, epoch=epoch, filepath=f"checkpoints/epoch_{epoch}_jepa.pth")
+    return model
 
 
 def save_checkpoint(model, optimizer, epoch, filepath):
@@ -126,7 +127,7 @@ def main():
     optimizer = optim.Adam(model.parameters(), lr=0.002)
 
     # Train the model
-    train_model(model, train_loader, optimizer, device, epochs=30)
+    model = train_model(model, train_loader, optimizer, device, epochs=30)
 
     # Save final checkpoint
     save_checkpoint(model, optimizer, epoch=30, filepath="jepa_model_checkpoint.pth")
