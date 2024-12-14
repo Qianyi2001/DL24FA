@@ -5,7 +5,9 @@ from dataset import create_wall_dataloader, WallDataset
 from models import JEPAModel
 from evaluator import ProbingEvaluator
 from schedulers import Scheduler, LRSchedule
+from torch.optim import AdamW
 import os
+from torch.cuda.amp import GradScaler, autocast
 
 def check_for_collapse(embeddings: torch.Tensor, eps: float = 1e-8):
     if embeddings.dim() == 3:
@@ -35,7 +37,8 @@ def load_data(device, batch_size=64):
         probing=False,
         device=device
     )
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=4,
+    pin_memory=True)
 
     # Probing Datasets
     probe_train_loader = create_wall_dataloader(
@@ -64,12 +67,13 @@ def load_data(device, batch_size=64):
 
     return train_loader, probe_train_loader, {"normal": val_normal_loader, "wall": val_wall_loader}
 
-def train_model(model, train_loader, optimizer, scheduler, device, epochs=10):
+def train_model(model, train_loader, optimizer, scheduler, device, epochs=30):
     """Train the JEPA model."""
     model.train()
     for epoch in range(epochs):
         epoch_loss = 0
         total_batches = len(train_loader)  # 获取总批次数
+        scaler = GradScaler()
         for batch_idx, batch in enumerate(train_loader, start=1):
             optimizer.zero_grad()
 
@@ -78,8 +82,9 @@ def train_model(model, train_loader, optimizer, scheduler, device, epochs=10):
             loss = loss_dict['loss']
 
             # Backpropagation
-            loss.backward()
-            optimizer.step()
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
             scheduler.adjust_learning_rate(epoch)
 
             epoch_loss += loss.item()
@@ -89,7 +94,7 @@ def train_model(model, train_loader, optimizer, scheduler, device, epochs=10):
                 print(f"Batch [{batch_idx}/{total_batches}], Cumulative Loss: {epoch_loss:.4f}")
 
         print(f"Epoch [{epoch+1}/{epochs}], Loss: {epoch_loss:.4f}")
-        model.update_target_encoder(momentum=0.996)  # EMA target encoder update
+        model.update_target_encoder(momentum=0.98)  # EMA target encoder update
 
     print(f"Model checkpoint saved")
     save_checkpoint(model, optimizer, epoch=epoch, filepath=f"checkpoints/epoch_{epoch}_jepa.pth")
@@ -115,7 +120,7 @@ def main():
     model = JEPAModel(latent_dim=256).to(device)
     
     # Optimizer and Scheduler
-    optimizer = optim.Adam(model.parameters(), lr=0.002)
+    optimizer = AdamW(model.parameters(), lr=0.002, weight_decay=1e-4)
     scheduler = Scheduler(
         schedule=LRSchedule.Cosine,
         base_lr=0.002,
@@ -125,10 +130,10 @@ def main():
     )
 
     # Train the model
-    train_model(model, train_loader, optimizer, scheduler, device, epochs=20)
+    train_model(model, train_loader, optimizer, scheduler, device, epochs=30)
 
     # Save final checkpoint
-    save_checkpoint(model, optimizer, epoch=20, filepath="jepa_model_checkpoint.pth")
+    save_checkpoint(model, optimizer, epoch=30, filepath="jepa_model_checkpoint.pth")
 
     # Evaluate
     evaluator = ProbingEvaluator(

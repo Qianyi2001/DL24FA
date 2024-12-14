@@ -124,7 +124,7 @@ class JEPAModel(nn.Module):
             param_t.data.copy_(param.data)
             param_t.requires_grad = False
             
-    def update_target_encoder(self, momentum=0.996):
+    def update_target_encoder(self, momentum=0.98):
         for param_t, param in zip(self.target_encoder.parameters(), self.encoder.parameters()):
             param_t.data = param_t.data * momentum + param.data * (1 - momentum)
             
