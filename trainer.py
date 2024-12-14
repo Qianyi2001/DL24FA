@@ -91,8 +91,8 @@ def train_model(model, train_loader, optimizer, device, epochs=30):
 
             epoch_loss += loss.item()
 
-            # 每30个批次打印一次累计损失和进度
-            if batch_idx % 30 == 0 or batch_idx == total_batches:
+            # 每100个批次打印一次累计损失和进度
+            if batch_idx % 100 == 0 or batch_idx == total_batches:
                 print(f"Batch [{batch_idx}/{total_batches}], Cumulative Loss: {epoch_loss:.4f}")
 
         print(f"Epoch [{epoch + 1}/{epochs}], Loss: {epoch_loss:.4f}")
