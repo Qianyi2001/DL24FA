@@ -68,6 +68,7 @@ def train_model(model, train_loader, optimizer, scheduler, device, epochs=10):
             scheduler.adjust_learning_rate(epoch)
 
             epoch_loss += loss.item()
+            print(epoch_loss)
 
         print(f"Epoch [{epoch+1}/{epochs}], Loss: {epoch_loss:.4f}")
         model.update_target_encoder(momentum=0.996)  # EMA target encoder update

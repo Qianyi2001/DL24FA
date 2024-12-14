@@ -25,7 +25,7 @@ class Scheduler:
         self.optimizer = optimizer
 
         if batch_size is None:
-            self.batch_size = data_loader.config.batch_size
+            self.batch_size = 64
         else:
             self.batch_size = batch_size
 
