@@ -5,6 +5,20 @@ from dataset import create_wall_dataloader, WallDataset
 from models import JEPAModel
 from evaluator import ProbingEvaluator
 from schedulers import Scheduler, LRSchedule
+import os
+
+def check_for_collapse(embeddings: torch.Tensor, eps: float = 1e-8):
+    if embeddings.dim() == 3:
+        B, T, D = embeddings.shape
+        flat_emb = embeddings.view(B * T, D)
+    else:
+        flat_emb = embeddings
+    var = flat_emb.var(dim=0)
+    mean_var = var.mean().item()
+    print(f"Check collapse: avg var={mean_var:.6f}, min var={var.min().item():.6f}, max var={var.max().item():.6f}")
+    if mean_var < eps:
+        print("Warning: Potential collapse detected.")
+    return mean_var
 
 def get_device():
     """Check for GPU availability."""
@@ -55,7 +69,8 @@ def train_model(model, train_loader, optimizer, scheduler, device, epochs=10):
     model.train()
     for epoch in range(epochs):
         epoch_loss = 0
-        for batch in train_loader:
+        total_batches = len(train_loader)  # 获取总批次数
+        for batch_idx, batch in enumerate(train_loader, start=1):
             optimizer.zero_grad()
 
             # Training step
@@ -68,10 +83,17 @@ def train_model(model, train_loader, optimizer, scheduler, device, epochs=10):
             scheduler.adjust_learning_rate(epoch)
 
             epoch_loss += loss.item()
-            print(epoch_loss)
+
+            # 每30个批次打印一次累计损失和进度
+            if batch_idx % 30 == 0 or batch_idx == total_batches:
+                print(f"Batch [{batch_idx}/{total_batches}], Cumulative Loss: {epoch_loss:.4f}")
 
         print(f"Epoch [{epoch+1}/{epochs}], Loss: {epoch_loss:.4f}")
         model.update_target_encoder(momentum=0.996)  # EMA target encoder update
+
+    print(f"Model checkpoint saved")
+    save_checkpoint(model, optimizer, epoch=epoch, filepath=f"checkpoints/epoch_{epoch}_jepa.pth")
+
 
 def save_checkpoint(model, optimizer, epoch, filepath):
     """Save model checkpoint."""
@@ -84,6 +106,7 @@ def save_checkpoint(model, optimizer, epoch, filepath):
 def main():
     # Set device
     device = get_device()
+    os.makedirs("checkpoints", exist_ok=True)
 
     # Load data
     train_loader, probe_train_loader, val_loaders = load_data(device)
