@@ -115,10 +115,10 @@ def main():
     model = JEPAModel(latent_dim=256).to(device)
     
     # Optimizer and Scheduler
-    optimizer = optim.Adam(model.parameters(), lr=0.0002)
+    optimizer = optim.Adam(model.parameters(), lr=0.002)
     scheduler = Scheduler(
         schedule=LRSchedule.Cosine,
-        base_lr=0.0002,
+        base_lr=0.002,
         data_loader=train_loader,
         epochs=20,
         optimizer=optimizer
