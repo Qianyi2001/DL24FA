@@ -7,6 +7,7 @@ from evaluator import ProbingEvaluator
 from schedulers import Scheduler, LRSchedule
 from torch.optim import AdamW
 import os
+from torch.cuda.amp import GradScaler, autocast
 
 def check_for_collapse(embeddings: torch.Tensor, eps: float = 1e-8):
     if embeddings.dim() == 3:
@@ -36,8 +37,7 @@ def load_data(device, batch_size=64):
         probing=False,
         device=device
     )
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=4,
-    pin_memory=True)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True, pin_memory=True)
 
     # Probing Datasets
     probe_train_loader = create_wall_dataloader(
@@ -72,7 +72,7 @@ def train_model(model, train_loader, optimizer, scheduler, device, epochs=30):
     for epoch in range(epochs):
         epoch_loss = 0
         total_batches = len(train_loader)  # 获取总批次数
-
+        scaler = GradScaler()
         for batch_idx, batch in enumerate(train_loader, start=1):
             optimizer.zero_grad()
 
@@ -81,8 +81,9 @@ def train_model(model, train_loader, optimizer, scheduler, device, epochs=30):
             loss = loss_dict['loss']
 
             # Backpropagation
-            loss.backward()
-            optimizer.step()
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
             scheduler.adjust_learning_rate(epoch)
 
             epoch_loss += loss.item()
