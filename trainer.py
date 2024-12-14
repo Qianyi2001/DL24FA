@@ -66,25 +66,28 @@ def load_data(device, batch_size=64):
 
     return train_loader, probe_train_loader, {"normal": val_normal_loader, "wall": val_wall_loader}
 
-def train_model(model, train_loader, optimizer, scheduler, device, epochs=30):
-    """Train the JEPA model."""
+
+def train_model(model, train_loader, optimizer, device, epochs=30):
+    """Train the JEPA model with mixed precision training."""
     model.train()
+    scaler = GradScaler()  # 初始化 GradScaler
+
     for epoch in range(epochs):
         epoch_loss = 0
         total_batches = len(train_loader)  # 获取总批次数
-        scaler = GradScaler()
+
         for batch_idx, batch in enumerate(train_loader, start=1):
             optimizer.zero_grad()
 
-            # Training step
-            loss_dict = model.training_step(batch.states, batch.actions)
-            loss = loss_dict['loss']
+            # 使用 autocast 进行前向传播
+            with autocast():
+                loss_dict = model.training_step(batch.states, batch.actions)
+                loss = loss_dict['loss']
 
-            # Backpropagation
+            # 使用 scaler 进行反向传播和梯度更新
             scaler.scale(loss).backward()
             scaler.step(optimizer)
             scaler.update()
-            scheduler.adjust_learning_rate(epoch)
 
             epoch_loss += loss.item()
 
@@ -92,11 +95,11 @@ def train_model(model, train_loader, optimizer, scheduler, device, epochs=30):
             if batch_idx % 30 == 0 or batch_idx == total_batches:
                 print(f"Batch [{batch_idx}/{total_batches}], Cumulative Loss: {epoch_loss:.4f}")
 
-        print(f"Epoch [{epoch+1}/{epochs}], Loss: {epoch_loss:.4f}")
-        model.update_target_encoder(momentum=0.99)  # EMA target encoder update
+        print(f"Epoch [{epoch + 1}/{epochs}], Loss: {epoch_loss:.4f}")
+        model.update_target_encoder(momentum=0.996)  # EMA target encoder update
 
-    print(f"Model checkpoint saved")
-    save_checkpoint(model, optimizer, epoch=epoch, filepath=f"checkpoints/epoch_{epoch}_jepa.pth")
+        print(f"Model checkpoint saved")
+        save_checkpoint(model, optimizer, epoch=epoch, filepath=f"checkpoints/epoch_{epoch}_jepa.pth")
 
 
 def save_checkpoint(model, optimizer, epoch, filepath):
@@ -106,6 +109,7 @@ def save_checkpoint(model, optimizer, epoch, filepath):
         "model_state_dict": model.state_dict(),
         "optimizer_state_dict": optimizer.state_dict(),
     }, filepath)
+
 
 def main():
     # Set device
@@ -117,19 +121,12 @@ def main():
 
     # Initialize model
     model = JEPAModel(latent_dim=256).to(device)
-    
-    # Optimizer and Scheduler
-    optimizer = AdamW(model.parameters(), lr=0.002, weight_decay=1e-4)
-    scheduler = Scheduler(
-        schedule=LRSchedule.Cosine,
-        base_lr=0.002,
-        data_loader=train_loader,
-        epochs=30,
-        optimizer=optimizer
-    )
+
+    # Optimizer
+    optimizer = optim.Adam(model.parameters(), lr=0.002)
 
     # Train the model
-    train_model(model, train_loader, optimizer, scheduler, device, epochs=30)
+    train_model(model, train_loader, optimizer, device, epochs=30)
 
     # Save final checkpoint
     save_checkpoint(model, optimizer, epoch=30, filepath="jepa_model_checkpoint.pth")
@@ -143,9 +140,10 @@ def main():
     )
     prober = evaluator.train_pred_prober()
     avg_losses = evaluator.evaluate_all(prober)
-    
+
     for key, loss in avg_losses.items():
         print(f"{key} validation loss: {loss:.4f}")
+
 
 if __name__ == "__main__":
     main()
