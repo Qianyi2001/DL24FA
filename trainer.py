@@ -37,7 +37,7 @@ def load_data(device, batch_size=64):
         probing=False,
         device=device
     )
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True, pin_memory=True)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
 
     # Probing Datasets
     probe_train_loader = create_wall_dataloader(
