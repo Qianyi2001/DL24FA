@@ -93,7 +93,7 @@ def train_model(model, train_loader, optimizer, scheduler, device, epochs=30):
                 print(f"Batch [{batch_idx}/{total_batches}], Cumulative Loss: {epoch_loss:.4f}")
 
         print(f"Epoch [{epoch+1}/{epochs}], Loss: {epoch_loss:.4f}")
-        model.update_target_encoder(momentum=0.98)  # EMA target encoder update
+        model.update_target_encoder(momentum=0.99)  # EMA target encoder update
 
     print(f"Model checkpoint saved")
     save_checkpoint(model, optimizer, epoch=epoch, filepath=f"checkpoints/epoch_{epoch}_jepa.pth")
