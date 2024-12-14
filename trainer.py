@@ -7,7 +7,6 @@ from evaluator import ProbingEvaluator
 from schedulers import Scheduler, LRSchedule
 from torch.optim import AdamW
 import os
-from torch.cuda.amp import GradScaler, autocast
 
 def check_for_collapse(embeddings: torch.Tensor, eps: float = 1e-8):
     if embeddings.dim() == 3:
@@ -73,7 +72,7 @@ def train_model(model, train_loader, optimizer, scheduler, device, epochs=30):
     for epoch in range(epochs):
         epoch_loss = 0
         total_batches = len(train_loader)  # 获取总批次数
-        scaler = GradScaler()
+
         for batch_idx, batch in enumerate(train_loader, start=1):
             optimizer.zero_grad()
 
@@ -82,9 +81,8 @@ def train_model(model, train_loader, optimizer, scheduler, device, epochs=30):
             loss = loss_dict['loss']
 
             # Backpropagation
-            scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
+            loss.backward()
+            optimizer.step()
             scheduler.adjust_learning_rate(epoch)
 
             epoch_loss += loss.item()
@@ -125,7 +123,7 @@ def main():
         schedule=LRSchedule.Cosine,
         base_lr=0.002,
         data_loader=train_loader,
-        epochs=20,
+        epochs=30,
         optimizer=optimizer
     )
 
