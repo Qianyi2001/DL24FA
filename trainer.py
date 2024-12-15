@@ -91,7 +91,7 @@ def train_model(model, train_loader, optimizer, scheduler, device, epochs=20):
 
             epoch_loss += loss.item()
 
-            # 每100个批次打印一次累计损失和进度
+            # 每200个批次打印一次累计损失和进度
             if batch_idx % 200 == 0 or batch_idx == total_batches:
                 model.update_target_encoder(momentum=0.99)  # EMA target encoder update
                 print(f"Batch [{batch_idx}/{total_batches}], Cumulative Loss: {epoch_loss:.4f}")

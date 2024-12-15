@@ -169,8 +169,6 @@ class JEPAModel(nn.Module):
         total_loss = loss_pred + 0.1 * variance_loss + 0.005 * cov_loss
 
 
-
-
         print(
             f"Prediction Loss (MSE): {loss_pred.item():.4f}, "
             f"Variance Loss: {variance_loss.item():.4f}, "
