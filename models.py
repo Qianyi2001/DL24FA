@@ -17,7 +17,7 @@ def check_for_collapse(embeddings: torch.Tensor, eps: float = 1e-8):
     mean_var = var.mean().item()
     min_var = var.min().item()
     max_var = var.max().item()
-    return f"Check collapse: avg var={mean_var:.4f}, min var={min_var:.4f}, max var={max_var:.4f}"
+    return f"----Check collapse: avg var={mean_var:.4f}, min var={min_var:.4f}, max var={max_var:.4f}---"
 
 def build_mlp(layers_dims: List[int]):
     layers = []
