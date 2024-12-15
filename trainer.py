@@ -69,8 +69,7 @@ def load_data(device, batch_size=64):
 
 def train_model(model, train_loader, optimizer, device, epochs=30):
     """Train the JEPA model with mixed precision training."""
-    model.train()
-    scaler = GradScaler()  # 初始化 GradScaler
+    model.train() # 初始化 GradScaler
 
     for epoch in range(epochs):
         epoch_loss = 0
@@ -79,16 +78,13 @@ def train_model(model, train_loader, optimizer, device, epochs=30):
         for batch_idx, batch in enumerate(train_loader, start=1):
             optimizer.zero_grad()
 
-            # 使用 autocast 进行前向传播
-            with autocast():
-                loss_dict = model.training_step(batch.states, batch.actions)
-                loss = loss_dict['loss']
+            loss_dict = model.training_step(batch.states, batch.actions)
+            loss = loss_dict['loss']
 
-            # 使用 scaler 进行反向传播和梯度更新
-            scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
-
+            # 反向传播和梯度更新
+            loss.backward()
+            optimizer.step()
+            model.update_target_encoder(momentum=0.996)  # EMA target encoder update
             epoch_loss += loss.item()
 
             # 每100个批次打印一次累计损失和进度
@@ -96,7 +92,6 @@ def train_model(model, train_loader, optimizer, device, epochs=30):
                 print(f"Batch [{batch_idx}/{total_batches}], Cumulative Loss: {epoch_loss:.4f}")
 
         print(f"Epoch [{epoch + 1}/{epochs}], Loss: {epoch_loss:.4f}")
-        model.update_target_encoder(momentum=0.996)  # EMA target encoder update
 
         print(f"Model checkpoint saved")
         save_checkpoint(model, optimizer, epoch=epoch, filepath=f"checkpoints/epoch_{epoch}_jepa.pth")

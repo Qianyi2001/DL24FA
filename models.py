@@ -74,16 +74,12 @@ class Encoder(nn.Module):
         super().__init__()
         self.conv = nn.Sequential(
             nn.Conv2d(2, 32, 3, stride=2, padding=1),  # 65 -> 33
-            nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.Conv2d(32, 64, 3, stride=2, padding=1),  # 33 -> 17
-            nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.Conv2d(64, 128, 3, stride=2, padding=1), # 17 -> 9
-            nn.BatchNorm2d(128),
+            nn.Conv2d(64, 128, 3, stride=2, padding=1),  # 17 -> 9
             nn.ReLU(),
-            nn.Conv2d(128, 256, 3, stride=2, padding=1), # 9 -> 5
-            nn.BatchNorm2d(256),
+            nn.Conv2d(128, 256, 3, stride=2, padding=1),  # 9 -> 5
             nn.ReLU()
         )
         self.fc = nn.Linear(256 * 5 * 5, latent_dim)
@@ -95,19 +91,18 @@ class Encoder(nn.Module):
         feat = feat.view(feat.size(0), -1)
         return self.fc(feat)
 
+
 class Predictor(nn.Module):
     def __init__(self, latent_dim=256, action_dim=2):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(latent_dim + action_dim, 512),
-            nn.BatchNorm1d(512),
             nn.ReLU(),
             nn.Linear(512, 512),
-            nn.BatchNorm1d(512),
             nn.ReLU(),
             nn.Linear(512, latent_dim)
         )
-        
+
     def forward(self, state, action):
         x = torch.cat([state, action], dim=1)
         return self.net(x)
@@ -174,7 +169,7 @@ class JEPAModel(nn.Module):
         cov = (pred_centered.T @ pred_centered) / (pred_centered.shape[0] - 1)
         cov_loss = (cov - torch.eye(cov.shape[0], device=device)).pow(2).sum()
 
-        total_loss = loss_pred + 0.01 * variance_loss + 0.001 * cov_loss
+        total_loss = loss_pred #+ 0.01 * variance_loss + 0.001 * cov_loss
 
         print(
             f"Prediction Loss (MSE): {loss_pred.item():.4f}, "
