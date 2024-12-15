@@ -15,32 +15,6 @@ def build_mlp(layers_dims: List[int]):
     return nn.Sequential(*layers)
 
 
-class MockModel(torch.nn.Module):
-    """
-    Does nothing. Just for testing.
-    """
-
-    def __init__(self, device="cuda", bs=64, n_steps=17, output_dim=256):
-        super().__init__()
-        self.device = device
-        self.bs = bs
-        self.n_steps = n_steps
-        self.repr_dim = 256
-
-    def forward(self, states, actions):
-        """
-        Args:
-            During training:
-                states: [B, T, Ch, H, W]
-            During inference:
-                states: [B, 1, Ch, H, W]
-            actions: [B, T-1, 2]
-
-        Output:
-            predictions: [B, T, D]
-        """
-        return torch.randn((self.bs, self.n_steps, self.repr_dim)).to(self.device)
-
 
 class Prober(torch.nn.Module):
     def __init__(
