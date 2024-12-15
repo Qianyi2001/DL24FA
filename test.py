@@ -58,7 +58,7 @@ def main():
     checkpoint_path = "checkpoints/epoch_0_batch100_jepa.pth"
     checkpoint = torch.load(checkpoint_path, map_location=device)
 
-    model = JEPAModel(latent_dim=256).to(device)
+    model = JEPAModel(latent_dim=2).to(device)
     model.load_state_dict(checkpoint["model_state_dict"])
 
     train_loader, probe_train_loader, val_loaders = load_data(device)
