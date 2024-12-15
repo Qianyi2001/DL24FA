@@ -15,8 +15,9 @@ def check_for_collapse(embeddings: torch.Tensor, eps: float = 1e-8):
     # 计算每个维度的方差
     var = flat_emb.var(dim=0)
     mean_var = var.mean().item()
-    print(f"Check collapse: avg var={mean_var:.6f}, min var={var.min().item():.6f}, max var={var.max().item():.6f}")
-
+    min_var = var.min().item()
+    max_var = var.max().item()
+    return f"Check collapse: avg var={mean_var:.4f}, min var={min_var:.4f}, max var={max_var:.4f}"
 
 def build_mlp(layers_dims: List[int]):
     layers = []
@@ -166,14 +167,16 @@ class JEPAModel(nn.Module):
         cov_loss = (cov - torch.eye(cov.shape[0], device=device)).pow(2).sum()
 
         total_loss = loss_pred + 0.1 * variance_loss + 0.005 * cov_loss
-        check_for_collapse(pred_repr)
+
+
 
 
         print(
             f"Prediction Loss (MSE): {loss_pred.item():.4f}, "
             f"Variance Loss: {variance_loss.item():.4f}, "
             f"Covariance Loss: {cov_loss.item():.4f}, "
-            f"Total Loss: {total_loss.item():.4f}"
+            f"Total Loss: {total_loss.item():.4f}",
+            check_for_collapse(pred_repr)
         )
 
         # print(f"Predicted Representations (pred_repr): {pred_repr}")  # 打印预测表示
