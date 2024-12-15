@@ -20,7 +20,7 @@ from normalizer import Normalizer
 @dataclass
 class ProbingConfig(ConfigBase):
     probe_targets: str = "locations"
-    lr: float = 0.0002
+    lr: float = 0.001
     epochs: int = 20
     schedule: LRSchedule = LRSchedule.Cosine
     sample_timesteps: int = 30
@@ -153,6 +153,7 @@ class ProbingEvaluator:
                     target = sampled_target_locs.cuda()
 
                 pred_locs = torch.stack([prober(x) for x in pred_encs], dim=1)
+                pred_locs = self.normalizer.normalize_location(pred_locs)
                 losses = location_losses(pred_locs, target)
                 per_probe_loss = losses.mean()
 
@@ -223,6 +224,7 @@ class ProbingEvaluator:
             target = self.normalizer.normalize_location(target)
 
             pred_locs = torch.stack([prober(x) for x in pred_encs], dim=1)
+            pred_locs = self.normalizer.normalize_location(pred_locs)
             losses = location_losses(pred_locs, target)
             probing_losses.append(losses.cpu())
 

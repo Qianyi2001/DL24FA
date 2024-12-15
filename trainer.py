@@ -7,7 +7,7 @@ from evaluator import ProbingEvaluator
 from schedulers import Scheduler, LRSchedule
 from torch.optim import AdamW
 import os
-from torch.cuda.amp import GradScaler, autocast
+from torch.nn.utils import clip_grad_norm_
 
 def check_for_collapse(embeddings: torch.Tensor, eps: float = 1e-8):
     if embeddings.dim() == 3:
@@ -83,12 +83,13 @@ def train_model(model, train_loader, optimizer, device, epochs=30):
 
             # 反向传播和梯度更新
             loss.backward()
+            clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
-            model.update_target_encoder(momentum=0.99)  # EMA target encoder update
             epoch_loss += loss.item()
 
             # 每100个批次打印一次累计损失和进度
             if batch_idx % 100 == 0 or batch_idx == total_batches:
+                model.update_target_encoder(momentum=0.99)  # EMA target encoder update
                 print(f"Batch [{batch_idx}/{total_batches}], Cumulative Loss: {epoch_loss:.4f}")
                 save_checkpoint(model, optimizer, epoch=epoch, filepath=f"checkpoints/epoch_{epoch}_batch{batch_idx}_jepa.pth")
 
@@ -120,7 +121,7 @@ def main():
     model = JEPAModel(latent_dim=256).to(device)
 
     # Optimizer
-    optimizer = optim.Adam(model.parameters(), lr=0.002)
+    optimizer = AdamW(model.parameters(), lr=1e-4, weight_decay=1e-3)
 
     # Train the model
     model = train_model(model, train_loader, optimizer, device, epochs=1)

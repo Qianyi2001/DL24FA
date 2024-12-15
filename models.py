@@ -5,6 +5,19 @@ from torch.nn import functional as F
 import torch
 
 
+def check_for_collapse(embeddings: torch.Tensor, eps: float = 1e-8):
+    if embeddings.dim() == 3:  # Timestep-based embeddings
+        B, T, D = embeddings.shape
+        flat_emb = embeddings.view(B * T, D)
+    else:
+        flat_emb = embeddings
+
+    # 计算每个维度的方差
+    var = flat_emb.var(dim=0)
+    mean_var = var.mean().item()
+    print(f"Check collapse: avg var={mean_var:.6f}, min var={var.min().item():.6f}, max var={var.max().item():.6f}")
+
+
 def build_mlp(layers_dims: List[int]):
     layers = []
     for i in range(len(layers_dims) - 2):
@@ -48,12 +61,17 @@ class Encoder(nn.Module):
         super().__init__()
         self.conv = nn.Sequential(
             nn.Conv2d(2, 32, 3, stride=2, padding=1),  # 65 -> 33
+            nn.BatchNorm2d(32),
             nn.LeakyReLU(),
             nn.Conv2d(32, 64, 3, stride=2, padding=1),  # 33 -> 17
+            nn.BatchNorm2d(64),
             nn.LeakyReLU(),
             nn.Conv2d(64, 128, 3, stride=2, padding=1),  # 17 -> 9
+            nn.BatchNorm2d(128),
             nn.LeakyReLU(),
+            nn.Dropout(0.2),  # Regularization
             nn.Conv2d(128, 256, 3, stride=2, padding=1),  # 9 -> 5
+            nn.BatchNorm2d(256),
             nn.LeakyReLU()
         )
         self.fc = nn.Linear(256 * 5 * 5, latent_dim)
@@ -147,7 +165,9 @@ class JEPAModel(nn.Module):
         cov = (pred_centered.T @ pred_centered) / (pred_centered.shape[0] - 1)
         cov_loss = (cov - torch.eye(cov.shape[0], device=device)).pow(2).sum()
 
-        total_loss = loss_pred + 0.01 * variance_loss + 0.005 * cov_loss
+        total_loss = loss_pred + 0.1 * variance_loss + 0.005 * cov_loss
+        check_for_collapse(pred_repr)
+
 
         print(
             f"Prediction Loss (MSE): {loss_pred.item():.4f}, "
