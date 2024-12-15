@@ -7,7 +7,9 @@ from evaluator import ProbingEvaluator
 from schedulers import Scheduler, LRSchedule
 from torch.optim import AdamW
 import os
+from torch.cuda.amp import GradScaler, autocast
 from torch.nn.utils import clip_grad_norm_
+from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 
 def check_for_collapse(embeddings: torch.Tensor, eps: float = 1e-8):
     if embeddings.dim() == 3:
@@ -67,9 +69,10 @@ def load_data(device, batch_size=64):
     return train_loader, probe_train_loader, {"normal": val_normal_loader, "wall": val_wall_loader}
 
 
-def train_model(model, train_loader, optimizer, device, epochs=30):
+def train_model(model, train_loader, optimizer, scheduler, device, epochs=20):
     """Train the JEPA model with mixed precision training."""
-    model.train() # 初始化 GradScaler
+    model.train()
+    scaler = GradScaler()
 
     for epoch in range(epochs):
         epoch_loss = 0
@@ -82,17 +85,19 @@ def train_model(model, train_loader, optimizer, device, epochs=30):
             loss = loss_dict['loss']
 
             # 反向传播和梯度更新
-            loss.backward()
-            clip_grad_norm_(model.parameters(), max_norm=1.0)
-            optimizer.step()
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+
             epoch_loss += loss.item()
 
             # 每100个批次打印一次累计损失和进度
-            if batch_idx % 100 == 0 or batch_idx == total_batches:
+            if batch_idx % 200 == 0 or batch_idx == total_batches:
                 model.update_target_encoder(momentum=0.99)  # EMA target encoder update
                 print(f"Batch [{batch_idx}/{total_batches}], Cumulative Loss: {epoch_loss:.4f}")
-                save_checkpoint(model, optimizer, epoch=epoch, filepath=f"checkpoints/epoch_{epoch}_batch{batch_idx}_jepa.pth")
+                # save_checkpoint(model, optimizer, epoch=epoch, filepath=f"checkpoints/epoch_{epoch}_batch{batch_idx}_jepa.pth")
 
+        scheduler.step()
         print(f"Epoch [{epoch + 1}/{epochs}], Loss: {epoch_loss:.4f}")
 
         print(f"Model checkpoint saved")
@@ -123,8 +128,10 @@ def main():
     # Optimizer
     optimizer = AdamW(model.parameters(), lr=1e-4, weight_decay=1e-3)
 
+    scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=2, eta_min=1e-6)
+
     # Train the model
-    model = train_model(model, train_loader, optimizer, device, epochs=1)
+    model = train_model(model, train_loader, optimizer, scheduler, device, epochs=20)
 
     # Save final checkpoint
     save_checkpoint(model, optimizer, epoch=1, filepath="jepa_model_checkpoint.pth")
