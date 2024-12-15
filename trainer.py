@@ -90,6 +90,7 @@ def train_model(model, train_loader, optimizer, device, epochs=30):
             # 每100个批次打印一次累计损失和进度
             if batch_idx % 100 == 0 or batch_idx == total_batches:
                 print(f"Batch [{batch_idx}/{total_batches}], Cumulative Loss: {epoch_loss:.4f}")
+                save_checkpoint(model, optimizer, epoch=epoch, filepath=f"checkpoints/epoch_{epoch}_batch{batch_idx}_jepa.pth")
 
         print(f"Epoch [{epoch + 1}/{epochs}], Loss: {epoch_loss:.4f}")
 
