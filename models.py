@@ -163,6 +163,7 @@ class JEPAModel(nn.Module):
 
         pred_repr = torch.stack(predictions, dim=1)
 
+
         loss_pred = F.mse_loss(pred_repr, target_repr)
         
         std_pred = torch.sqrt(pred_repr.var(dim=0) + 1e-04)
@@ -181,6 +182,9 @@ class JEPAModel(nn.Module):
             f"Covariance Loss: {cov_loss.item():.4f}, "
             f"Total Loss: {total_loss.item():.4f}"
         )
+        
+        print(f"Predicted Representations (pred_repr): {pred_repr}")  # 打印预测表示
+        print(f"Target Representations (target_repr): {target_repr}")  # 打印目标表示
 
         return {
             'loss': total_loss,
