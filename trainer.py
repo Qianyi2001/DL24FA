@@ -134,7 +134,7 @@ def main():
     model = train_model(model, train_loader, optimizer, scheduler, device, epochs=20)
 
     # Save final checkpoint
-    save_checkpoint(model, optimizer, epoch=1, filepath="jepa_model_checkpoint.pth")
+    save_checkpoint(model, optimizer, epoch=20, filepath="jepa_model_checkpoint.pth")
 
     # Evaluate
     evaluator = ProbingEvaluator(
