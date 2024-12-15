@@ -121,7 +121,7 @@ def main():
     train_loader, probe_train_loader, val_loaders = load_data(device)
 
     # Initialize model
-    model = JEPAModel(latent_dim=256).to(device)
+    model = JEPAModel(latent_dim=2).to(device)
 
     # Optimizer
     optimizer = optim.Adam(model.parameters(), lr=0.002)
