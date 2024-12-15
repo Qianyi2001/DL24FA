@@ -166,7 +166,7 @@ class JEPAModel(nn.Module):
         cov = (pred_centered.T @ pred_centered) / (pred_centered.shape[0] - 1)
         cov_loss = (cov - torch.eye(cov.shape[0], device=device)).pow(2).sum()
 
-        total_loss = loss_pred + 0.01 * variance_loss + 0.001 * cov_loss
+        total_loss = loss_pred + 0.3 * variance_loss + 0.01 * cov_loss
 
 
         print(
