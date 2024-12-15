@@ -131,11 +131,11 @@ class JEPAModel(nn.Module):
             predictions.append(curr_state)
 
         pred_repr = torch.stack(predictions, dim=1)
-        print("Target Representations for the first sample (T=0, T=1, T=2):")
-        print(target_repr[0, 0:3, :])  # 打印目标表示的前3个时间步
-
-        print("\nPredicted Representations for the first sample (T=0, T=1, T=2):")
-        print(pred_repr[0, 0:3, :])  # 打印预测表示的前3个时间步
+        # print("Target Representations for the first sample (T=0, T=1, T=2):")
+        # print(target_repr[0, 0:3, :])  # 打印目标表示的前3个时间步
+        #
+        # print("\nPredicted Representations for the first sample (T=0, T=1, T=2):")
+        # print(pred_repr[0, 0:3, :])  # 打印预测表示的前3个时间步
 
         loss_pred = F.mse_loss(pred_repr, target_repr)
         
@@ -147,7 +147,7 @@ class JEPAModel(nn.Module):
         cov = (pred_centered.T @ pred_centered) / (pred_centered.shape[0] - 1)
         cov_loss = (cov - torch.eye(cov.shape[0], device=device)).pow(2).sum()
 
-        total_loss = loss_pred #+ 0.01 * variance_loss + 0.005 * cov_loss
+        total_loss = loss_pred + 0.01 * variance_loss + 0.005 * cov_loss
 
         print(
             f"Prediction Loss (MSE): {loss_pred.item():.4f}, "
