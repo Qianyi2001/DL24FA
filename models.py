@@ -157,8 +157,11 @@ class JEPAModel(nn.Module):
             predictions.append(curr_state)
 
         pred_repr = torch.stack(predictions, dim=1)
-        print(pred_repr.shape)
+        print("Target Representations for the first sample (T=0, T=1, T=2):")
+        print(target_repr[0, 0:3, :])  # 打印目标表示的前3个时间步
 
+        print("\nPredicted Representations for the first sample (T=0, T=1, T=2):")
+        print(pred_repr[0, 0:3, :])  # 打印预测表示的前3个时间步
 
         loss_pred = F.mse_loss(pred_repr, target_repr)
         
