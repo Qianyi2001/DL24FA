@@ -182,7 +182,7 @@ class JEPAModel(nn.Module):
             f"Covariance Loss: {cov_loss.item():.4f}, "
             f"Total Loss: {total_loss.item():.4f}"
         )
-        
+
         print(f"Predicted Representations (pred_repr): {pred_repr}")  # 打印预测表示
         print(f"Target Representations (target_repr): {target_repr}")  # 打印目标表示
 
