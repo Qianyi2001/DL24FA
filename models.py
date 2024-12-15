@@ -174,7 +174,7 @@ class JEPAModel(nn.Module):
         cov = (pred_centered.T @ pred_centered) / (pred_centered.shape[0] - 1)
         cov_loss = (cov - torch.eye(cov.shape[0], device=device)).pow(2).sum()
 
-        total_loss = loss_pred + 0.1 * variance_loss + 0.01 * cov_loss
+        total_loss = loss_pred + 0.01 * variance_loss + 0.001 * cov_loss
 
         print(
             f"Prediction Loss (MSE): {loss_pred.item():.4f}, "
@@ -183,8 +183,8 @@ class JEPAModel(nn.Module):
             f"Total Loss: {total_loss.item():.4f}"
         )
 
-        print(f"Predicted Representations (pred_repr): {pred_repr}")  # 打印预测表示
-        print(f"Target Representations (target_repr): {target_repr}")  # 打印目标表示
+        # print(f"Predicted Representations (pred_repr): {pred_repr}")  # 打印预测表示
+        # print(f"Target Representations (target_repr): {target_repr}")  # 打印目标表示
 
         return {
             'loss': total_loss,
