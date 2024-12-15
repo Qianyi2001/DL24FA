@@ -84,7 +84,7 @@ def train_model(model, train_loader, optimizer, device, epochs=30):
             # 反向传播和梯度更新
             loss.backward()
             optimizer.step()
-            model.update_target_encoder(momentum=0.996)  # EMA target encoder update
+            model.update_target_encoder(momentum=0.99)  # EMA target encoder update
             epoch_loss += loss.item()
 
             # 每100个批次打印一次累计损失和进度
