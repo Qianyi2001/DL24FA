@@ -104,6 +104,17 @@ class JEPAModel(nn.Module):
     def update_target_encoder(self, momentum=0.996):
         for param_t, param in zip(self.target_encoder.parameters(), self.encoder.parameters()):
             param_t.data = param_t.data * momentum + param.data * (1 - momentum)
+
+    def contrastive_loss(self, anchor, positive, temperature=0.1):
+        """
+        Computes the contrastive loss between anchor and positive samples.
+        """
+        anchor_norm = F.normalize(anchor, dim=-1)
+        positive_norm = F.normalize(positive, dim=-1)
+
+        logits = torch.matmul(anchor_norm, positive_norm.T) / temperature
+        labels = torch.arange(anchor.size(0), device=anchor.device)
+        return F.cross_entropy(logits, labels)
             
     def forward(self, states, actions):
         curr_state = self.encoder(states[:,0])
